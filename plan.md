@@ -247,7 +247,16 @@ PointerOverlay/
 | Bundle ID | `jp.ac.nitech.tamaki.PointerOverlay`（仮） |
 | その他 | テストはSwift Testing、READMEは日本語。画面収録への映り込みはOSの既定動作のまま |
 
-## 13. 技術資料
+## 13. 検証記録
+
+| 日付 | 項目 | 結果 |
+|---|---|---|
+| 2026-11-23 | PowerPoint／Keynote 全画面、クリック・ドラッグ・スクロール、全画面Space・Stage Manager | 問題なし（level `.statusBar`(25) ＋ `.canJoinAllApplications`/`.canJoinAllSpaces`/`.stationary`/`.ignoresCycle`）。Phase 1 ゲート通過 |
+| 2026-11-23 | 先端位置（内蔵画面 2x） | 誤差 0.48 pt。ウィンドウ原点はWindowServerが整数ptに切り捨てるため、最近接整数へ丸めて ≤0.5 pt とした |
+| 2026-11-23 | CPU（Debugビルド、M系内蔵画面） | 静止時 0.3〜0.4%、移動中 約2%、RSS 約76 MB |
+| — | 複数画面・倍率違い・接続切断・スリープ復帰 | 未検証（外部ディスプレイが必要） |
+
+## 14. 技術資料
 
 - Apple: `NSWindow.CollectionBehavior.canJoinAllApplications` — https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct/canjoinallapplications
 - Apple: `NSWindow.CollectionBehavior` — https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct

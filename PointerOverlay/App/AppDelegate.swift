@@ -32,10 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsItem.isEnabled = false // Phase 2 で実装
         menu.addItem(settingsItem)
 
-        // Phase 1 検証用：ウィンドウレベルと collectionBehavior の比較
-        let debugItem = NSMenuItem(title: "検証（Phase 1）", action: nil, keyEquivalent: "")
+        #if DEBUG
+        // 検証用（Debug ビルドのみ）：ウィンドウレベルと collectionBehavior の比較
+        let debugItem = NSMenuItem(title: "検証", action: nil, keyEquivalent: "")
         debugItem.submenu = debugMenu
         menu.addItem(debugItem)
+        #endif
 
         menu.addItem(.separator())
 
@@ -47,7 +49,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         toggleItem.state = overlay.isEnabled ? .on : .off
+        #if DEBUG
         rebuildDebugMenu()
+        #endif
     }
 
     private func rebuildDebugMenu() {

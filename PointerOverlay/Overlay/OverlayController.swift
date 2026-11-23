@@ -1,6 +1,6 @@
 import AppKit
 
-/// Phase 1 検証用：ウィンドウレベルの候補。
+/// ウィンドウレベルの候補（既定：statusBar。Phase 1 で PowerPoint/Keynote 全画面での表示を確認済み）。
 enum OverlayLevel: String, CaseIterable {
     case floating, statusBar, popUpMenu, screenSaver
 
@@ -14,7 +14,7 @@ enum OverlayLevel: String, CaseIterable {
     }
 }
 
-/// Phase 1 検証用：collectionBehavior の候補。
+/// collectionBehavior の候補（既定：allApplicationsAndSpaces。Phase 1 で確認済み）。
 enum SpaceBehavior: String, CaseIterable {
     /// .canJoinAllApplications を優先（plan §4.1）
     case allApplications
@@ -69,6 +69,7 @@ final class OverlayController {
         spaceBehavior = defaults.string(forKey: Keys.behavior).flatMap(SpaceBehavior.init) ?? .allApplicationsAndSpaces
 
         window = OverlayWindow(contentSize: ArrowGeometry.windowSize(height: 80))
+        window.setFrame(ArrowGeometry.windowFrame(hotspot: NSEvent.mouseLocation, height: 80), display: false)
         window.contentView = arrowView
         window.level = level.level
         window.collectionBehavior = spaceBehavior.behavior
@@ -98,12 +99,18 @@ final class OverlayController {
     private func applyStyle() {
         arrowView.arrowHeight = arrowHeight
         arrowView.fillColor = fillColor.withAlphaComponent(opacity)
-        window.setContentSize(ArrowGeometry.windowSize(height: arrowHeight))
         if shouldRun { move(to: NSEvent.mouseLocation) }
     }
 
     private func move(to hotspot: CGPoint) {
-        window.setFrameOrigin(ArrowGeometry.windowFrame(hotspot: hotspot, height: arrowHeight).origin)
+        let screen = ArrowGeometry.screenFrame(containing: hotspot, in: NSScreen.screens.map(\.frame))
+        let placement = ArrowGeometry.placement(hotspot: hotspot, height: arrowHeight, screen: screen)
+        arrowView.tip = placement.tip
+        if window.frame.size == placement.frame.size {
+            window.setFrameOrigin(placement.frame.origin)   // 通常時：位置だけ変える
+        } else {
+            window.setFrame(placement.frame, display: false)
+        }
     }
 
     /// 画面構成変更・スリープ復帰・Space 切り替え時に、位置を再計算して最前面に戻す。
@@ -123,6 +130,8 @@ final class OverlayController {
         observers.append(nc.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                         object: nil, queue: .main, using: handler))
         observers.append(wnc.addObserver(forName: NSWorkspace.didWakeNotification,
+                                         object: nil, queue: .main, using: handler))
+        observers.append(wnc.addObserver(forName: NSWorkspace.screensDidWakeNotification,
                                          object: nil, queue: .main, using: handler))
         observers.append(wnc.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
                                          object: nil, queue: .main, using: handler))
