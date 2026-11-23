@@ -255,7 +255,9 @@ PointerOverlay/
 | 2026-11-23 | 先端位置（内蔵画面 2x） | 誤差 0.48 pt。ウィンドウ原点はWindowServerが整数ptに切り捨てるため、最近接整数へ丸めて ≤0.5 pt とした |
 | 2026-11-23 | CPU（Debugビルド、M系内蔵画面） | 静止時 0.3〜0.4%、移動中 約2%、RSS 約76 MB |
 | 2026-11-23 | 複数画面・倍率違い・負座標・接続切断・スリープ復帰・長時間使用 | 問題なし（Phase 3） |
-| 2026-11-23 | 設定の保存・復元（ON/OFF、サイズ）、OFF起動時に非表示 | 自動確認で問題なし。設定画面の操作は実機確認待ち（Phase 2） |
+| 2026-11-23 | 設定画面（サイズ・色・不透明度・初期値に戻す）、再起動後の設定とON/OFFの復元 | 問題なし（Phase 2） |
+| 2026-11-23 | Release `.app`（arm64、ad-hoc署名、entitlementsなし、LSMinimumSystemVersion 27.0） | `~/Applications` から一般ユーザーで起動・設定復元を確認。quarantine付きでは `spctl` が rejected、`xattr -dr com.apple.quarantine` で解除できることを確認 |
+| — | 別のApple Silicon Macでの起動・全画面表示 | 未検証（Phase 4 完了条件） |
 
 ## 14. 技術資料
 
