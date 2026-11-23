@@ -254,7 +254,8 @@ PointerOverlay/
 | 2026-11-23 | PowerPoint／Keynote 全画面、クリック・ドラッグ・スクロール、全画面Space・Stage Manager | 問題なし（level `.statusBar`(25) ＋ `.canJoinAllApplications`/`.canJoinAllSpaces`/`.stationary`/`.ignoresCycle`）。Phase 1 ゲート通過 |
 | 2026-11-23 | 先端位置（内蔵画面 2x） | 誤差 0.48 pt。ウィンドウ原点はWindowServerが整数ptに切り捨てるため、最近接整数へ丸めて ≤0.5 pt とした |
 | 2026-11-23 | CPU（Debugビルド、M系内蔵画面） | 静止時 0.3〜0.4%、移動中 約2%、RSS 約76 MB |
-| — | 複数画面・倍率違い・接続切断・スリープ復帰 | 未検証（外部ディスプレイが必要） |
+| 2026-11-23 | 複数画面・倍率違い・負座標・接続切断・スリープ復帰・長時間使用 | 問題なし（Phase 3） |
+| 2026-11-23 | 設定の保存・復元（ON/OFF、サイズ）、OFF起動時に非表示 | 自動確認で問題なし。設定画面の操作は実機確認待ち（Phase 2） |
 
 ## 14. 技術資料
 

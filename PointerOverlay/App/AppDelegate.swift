@@ -4,7 +4,9 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
+    private let settings = AppSettings()
     private let overlay = OverlayController()
+    private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private let toggleItem = NSMenuItem(title: "ポインタ表示", action: nil, keyEquivalent: "")
     private let debugMenu = NSMenu(title: "検証")
 
@@ -14,10 +16,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.menu = makeMenu()
         statusItem = item
 
-        // 検証用：`open PointerOverlay.app --args -debug.startEnabled YES` で ON の状態で起動する。
-        if UserDefaults.standard.bool(forKey: "debug.startEnabled") {
-            overlay.setEnabled(true)
-        }
+        settings.onChange = { [weak self] in self?.applySettings() }
+        applySettings()   // 前回の ON/OFF・外観を復元（初回は OFF）
+    }
+
+    private func applySettings() {
+        overlay.apply(enabled: settings.isEnabled,
+                      height: settings.size,
+                      color: settings.color,
+                      opacity: settings.alpha)
     }
 
     private func makeMenu() -> NSMenu {
@@ -28,8 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         toggleItem.action = #selector(toggleOverlay(_:))
         menu.addItem(toggleItem)
 
-        let settingsItem = NSMenuItem(title: "設定…", action: nil, keyEquivalent: "")
-        settingsItem.isEnabled = false // Phase 2 で実装
+        let settingsItem = NSMenuItem(title: "設定…", action: #selector(showSettings(_:)), keyEquivalent: "")
+        settingsItem.target = self
         menu.addItem(settingsItem)
 
         #if DEBUG
@@ -48,7 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        toggleItem.state = overlay.isEnabled ? .on : .off
+        toggleItem.state = settings.isEnabled ? .on : .off
         #if DEBUG
         rebuildDebugMenu()
         #endif
@@ -76,7 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleOverlay(_ sender: NSMenuItem) {
-        overlay.setEnabled(!overlay.isEnabled)
+        settings.setEnabled(!settings.isEnabled)
+    }
+
+    @objc private func showSettings(_ sender: NSMenuItem) {
+        settingsWindow.show()
     }
 
     @objc private func selectLevel(_ sender: NSMenuItem) {

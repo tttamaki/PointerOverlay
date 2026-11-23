@@ -41,12 +41,9 @@ final class OverlayController {
         static let behavior = "debug.spaceBehavior"
     }
 
-    private(set) var isEnabled = false
-    var arrowHeight: CGFloat = 80 { didSet { applyStyle() } }
-    var fillColor: NSColor = NSColor(srgbRed: 0x80 / 255, green: 0x80 / 255, blue: 0x80 / 255, alpha: 1) {
-        didSet { applyStyle() }
-    }
-    var opacity: CGFloat = 1.0 { didSet { applyStyle(); updateRunningState() } }
+    private var isEnabled = false
+    private var arrowHeight: CGFloat = AppSettings.defaultSize
+    private var opacity: CGFloat = 1
 
     var level: OverlayLevel {
         didSet { UserDefaults.standard.set(level.rawValue, forKey: Keys.level); window.level = level.level }
@@ -65,42 +62,44 @@ final class OverlayController {
 
     init() {
         let defaults = UserDefaults.standard
+        #if DEBUG
         level = defaults.string(forKey: Keys.level).flatMap(OverlayLevel.init) ?? .statusBar
         spaceBehavior = defaults.string(forKey: Keys.behavior).flatMap(SpaceBehavior.init) ?? .allApplicationsAndSpaces
+        #else
+        level = .statusBar
+        spaceBehavior = .allApplicationsAndSpaces
+        #endif
 
-        window = OverlayWindow(contentSize: ArrowGeometry.windowSize(height: 80))
-        window.setFrame(ArrowGeometry.windowFrame(hotspot: NSEvent.mouseLocation, height: 80), display: false)
+        window = OverlayWindow(contentSize: ArrowGeometry.windowSize(height: arrowHeight))
+        window.setFrame(ArrowGeometry.windowFrame(hotspot: NSEvent.mouseLocation, height: arrowHeight), display: false)
         window.contentView = arrowView
         window.level = level.level
         window.collectionBehavior = spaceBehavior.behavior
-        applyStyle()
         observeSystem()
     }
 
-    func setEnabled(_ enabled: Bool) {
+    /// 設定を一括で反映する。変化した項目だけを更新し、不要な再描画やタイマー再起動をしない。
+    func apply(enabled: Bool, height: CGFloat, color: NSColor, opacity: CGFloat) {
+        let sizeChanged = height != arrowHeight
+        arrowHeight = height
+        self.opacity = opacity
         isEnabled = enabled
-        updateRunningState()
-    }
+        arrowView.arrowHeight = height
+        arrowView.fillColor = color.withAlphaComponent(opacity)
 
-    // MARK: - Private
-
-    private var shouldRun: Bool { isEnabled && opacity > 0 }
-
-    private func updateRunningState() {
         if shouldRun {
-            tracker.start()
-            window.orderFrontRegardless()
+            if sizeChanged { move(to: NSEvent.mouseLocation) }
+            tracker.start()                 // 起動済みなら何もしない
+            if !window.isVisible { window.orderFrontRegardless() }
         } else {
             tracker.stop()
             window.orderOut(nil)
         }
     }
 
-    private func applyStyle() {
-        arrowView.arrowHeight = arrowHeight
-        arrowView.fillColor = fillColor.withAlphaComponent(opacity)
-        if shouldRun { move(to: NSEvent.mouseLocation) }
-    }
+    // MARK: - Private
+
+    private var shouldRun: Bool { isEnabled && opacity > 0 }
 
     private func move(to hotspot: CGPoint) {
         let screen = ArrowGeometry.screenFrame(containing: hotspot, in: NSScreen.screens.map(\.frame))
