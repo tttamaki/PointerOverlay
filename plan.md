@@ -8,7 +8,7 @@ PowerPoint、Keynote、PDFビューア等の全画面プレゼンテーション
 
 - 開発言語：Swift。ウィンドウ・描画・マウス位置取得はAppKit、設定UIはSwiftUIを基本とする。
 - 対応CPU：Apple Silicon（arm64）のみ。Intelおよび過去OSとの互換性は不要。
-- 対応OS：開発時に利用可能な現行macOSを最小ターゲットに設定する。**具体的なバージョンは開発環境確認後に固定**する。
+- 対応OS：Deployment Target は **macOS 27.0**（開発機：macOS 27.2.1 / Xcode 27.2 / Swift 6.4.2）。
 - 配布：App Storeなし。単体の `.app` をコピーして利用する。外部ランタイム、サーバー、ネットワーク接続は不要。
 - アプリ形態：Dockアイコンのないメニューバー常駐アプリ（`LSUIElement = YES`）。通常のメインウィンドウは持たない。
 - 管理者権限、root権限、カーネル拡張、システム全体へのインストールは不要とする。
@@ -18,9 +18,9 @@ PowerPoint、Keynote、PDFビューア等の全画面プレゼンテーション
 
 ### 3.1 矢印
 
-- 形状は単一の矢印（左上側の先端で位置を指す一般的なカーソル形状）。複数形状やアニメーションは実装しない。
-- 単色塗り、輪郭線・影・光彩なし。デフォルト色は中間的なグレー（暫定 `#808080`）。色はmacOS標準カラーピッカーで変更可能。
-- サイズは **24〜300 pt**、初期値 **80 pt（暫定）**。設定値は矢印の基準寸法（長辺）と定義する。
+- 形状は単一の矢印（左上側の先端で位置を指す、軸（尾）付きの標準カーソル型）。複数形状やアニメーションは実装しない。
+- 単色塗り、輪郭線・影・光彩なし。デフォルト色は中間的なグレー（暫定 `#808080`）。色はmacOS標準カラーピッカーで変更可能（ピッカーのアルファは無効とし、透明度は不透明度設定のみで扱う）。
+- サイズは **24〜300 pt**、初期値 **80 pt（暫定）**。設定値は矢印の外接矩形の高さと定義する。
 - 不透明度は **0〜100%**、初期値 **100%**。0%は完全透明として扱う。
 - 矢印の先端（ホットスポット）は実際のマウスポインタ位置に一致させる。ウィンドウ位置や画面境界によって先端位置が変わらないこと。
 - Retina等の異なる表示倍率でもシャープに表示する。`NSBezierPath` / `CGPath` 等のベクター描画を基本とする。
@@ -33,7 +33,8 @@ PowerPoint、Keynote、PDFビューア等の全画面プレゼンテーション
 - メニューバーには少なくとも「ポインタ表示 ON/OFF」「設定…」「終了」を配置する。
 - 設定画面にはサイズ、色、不透明度、矢印プレビュー、初期値に戻す操作を配置する。
 - 設定は変更時に即時反映し、`UserDefaults` / `@AppStorage` に保存する。各Macで独立に保存し、設定同期は不要。
-- 初回起動時のON/OFF初期値は **OFF（暫定）** とする。
+- 初回起動時のON/OFF初期値は **OFF** とする。2回目以降は前回終了時のON/OFF状態を復元する。
+- 全画面プレゼンでアプリが標準ポインタを自動で隠した場合も、ONの間は矢印を表示し続ける（静止時の自動非表示は実装しない）。
 
 ### 3.3 複数画面
 
@@ -52,7 +53,7 @@ PowerPoint、Keynote、PDFビューア等の全画面プレゼンテーション
 - ウィンドウがアクティブにならず、フォーカスを奪わないようにする。
 - 矢印のベクター画像・レイヤーは設定変更時のみ作成・更新し、追従時はウィンドウ位置だけを変更する。
 - 矢印先端のオフセットを考慮してウィンドウ原点を算出する。画面端では矢印の一部が画面外に出てもよく、先端位置を優先する。
-- ウィンドウレベルは「通常アプリより前面だが、不要にシステムUIを覆わない」ものを実機で選択する。
+- ウィンドウレベルは、メニューバー・Dockの上にも矢印を重ねて表示できるものを選ぶ（クリックは透過するので操作は妨げない）。具体値は実機で確認する。
 - 全画面Spaceへの参加には `collectionBehavior` の `.canJoinAllApplications` を優先検証し、Spaces向けの `.canJoinAllSpaces` との組み合わせを必要に応じて確認する。`.canJoinAllApplications` と `.auxiliary` / `.primary` は排他的なので同時指定しない。
 - PowerPoint・Keynoteの全画面表示で実際に重ねられるかは、実機で確認するまで未確定と扱う。
 
@@ -222,13 +223,43 @@ PointerOverlay/
 
 以下は本計画では暫定値または任意機能として扱い、実機検証・初回利用後に決定する。
 
-- macOS／Xcodeの正確なバージョン（Deployment Target）。
-- デフォルトサイズ80 pt、デフォルト色`#808080`、初期OFFの妥当性。
+- デフォルトサイズ80 pt、デフォルト色`#808080`の妥当性。
 - 20 Hzの追従速度が実用上十分か。
 - 全画面プレゼン中のオンライン配信・録画に矢印を映す必要があるか。
 - ログイン時自動起動を将来追加する必要があるか。
 
-## 12. 技術資料
+## 12. 決定事項（2026-11-23）
+
+| 項目 | 決定 |
+|---|---|
+| 開発環境 | macOS 27.2.1 / Xcode 27.2 (27B52) / Swift 6.4.2 / arm64 |
+| Deployment Target | macOS 27.0 |
+| プロジェクト | `.xcodeproj` を直接作成・管理する（XcodeGen等の生成ツールは使わない） |
+| 署名・配布 | Ad-hoc署名。別Macでの初回起動手順（quarantine属性の除去等）をREADMEに記載 |
+| 進め方 | Phase 0〜1を実装・ビルドした時点で止め、PowerPoint/Keynote全画面での表示を目視確認してからPhase 2へ進む |
+| 矢印形状 | 軸付きの標準カーソル型。サイズは外接矩形の高さ |
+| 静止時 | 標準ポインタが自動で隠れても、矢印は表示し続ける |
+| ON/OFFの保存 | 初回はOFF。以降は前回終了時の状態を復元 |
+| システムUI | メニューバー・Dockの上にも矢印を重ねて表示する |
+| 色と不透明度 | カラーピッカーのアルファは無効。透明度は不透明度スライダーだけで調整 |
+| メニューバー | `NSStatusItem`。ON/OFFはチェックマークで表示。設定画面はSwiftUIのウィンドウ |
+| 設定UI | サイズ：スライダー＋数値入力（1 pt刻み）、不透明度：スライダー（1%刻み） |
+| Bundle ID | `jp.ac.nitech.tamaki.PointerOverlay`（仮） |
+| その他 | テストはSwift Testing、READMEは日本語。画面収録への映り込みはOSの既定動作のまま |
+
+## 13. 検証記録
+
+| 日付 | 項目 | 結果 |
+|---|---|---|
+| 2026-11-23 | PowerPoint／Keynote 全画面、クリック・ドラッグ・スクロール、全画面Space・Stage Manager | 問題なし（level `.statusBar`(25) ＋ `.canJoinAllApplications`/`.canJoinAllSpaces`/`.stationary`/`.ignoresCycle`）。Phase 1 ゲート通過 |
+| 2026-11-23 | 先端位置（内蔵画面 2x） | 誤差 0.48 pt。ウィンドウ原点はWindowServerが整数ptに切り捨てるため、最近接整数へ丸めて ≤0.5 pt とした |
+| 2026-11-23 | CPU（Debugビルド、M系内蔵画面） | 静止時 0.3〜0.4%、移動中 約2%、RSS 約76 MB |
+| 2026-11-23 | 複数画面・倍率違い・負座標・接続切断・スリープ復帰・長時間使用 | 問題なし（Phase 3） |
+| 2026-11-23 | 設定画面（サイズ・色・不透明度・初期値に戻す）、再起動後の設定とON/OFFの復元 | 問題なし（Phase 2） |
+| 2026-11-23 | Release `.app`（arm64、ad-hoc署名、entitlementsなし、LSMinimumSystemVersion 27.0） | `~/Applications` から一般ユーザーで起動・設定復元を確認。quarantine付きでは `spctl` が rejected、`xattr -dr com.apple.quarantine` で解除できることを確認 |
+| — | 別のApple Silicon Macでの起動・全画面表示 | 未検証（Phase 4 完了条件） |
+
+## 14. 技術資料
 
 - Apple: `NSWindow.CollectionBehavior.canJoinAllApplications` — https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct/canjoinallapplications
 - Apple: `NSWindow.CollectionBehavior` — https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct
